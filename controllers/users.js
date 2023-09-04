@@ -1,5 +1,3 @@
-const { ValidationError } = require('mongoose');
-
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
@@ -8,6 +6,7 @@ const BadRequestError = require('../errors/BadRequestError');
 const NotFoundError = require('../errors/NotFoundError');
 const ConflictError = require('../errors/ConflictError');
 const InternalServerError = require('../errors/InternalServerError');
+// const UnauthorizedError = require('../errors/UnauthorizedError');
 
 const { NODE_ENV, JWT_SECRET } = process.env;
 
@@ -15,7 +14,6 @@ const createUser = (req, res, next) => {
   const {
     name, email, password,
   } = req.body;
-
   bcrypt
     .hash(password, 10)
     .then((hash) => User.create({
@@ -24,21 +22,19 @@ const createUser = (req, res, next) => {
       password: hash,
     }))
     .then((user) => {
-      res.status(201).send({
-        name: user.name,
-        email: user.email,
-      });
+      const userResponseData = user.toObject();
+      delete userResponseData.password;
+      res.status(201).send(userResponseData);
     })
     .catch((error) => {
-      if (error instanceof ValidationError) {
-        next(new BadRequestError('Некорректные данные - запрос не может быть обработан'));
-      } else if (error.code === 11000) {
-        next(new ConflictError('Пользователь с такими данными уже существует'));
-      } else {
-        next(error);
+      if (error.name === 'ValidationError') {
+        return next(new BadRequestError('Некорректные данные - запрос не может быть обработан'));
       }
-    })
-    .catch(next);
+      if (error.code === 11000) {
+        return next(new ConflictError('Пользователь с такими данными уже существует'));
+      }
+      return next(error);
+    });
 };
 
 const login = (req, res, next) => {
@@ -72,15 +68,15 @@ const getUserInfo = (req, res, next) => User.findById(req.user._id)
   });
 
 const updateUserInfo = (req, res, next) => {
-  const { name, about } = req.body;
+  const { name, email } = req.body;
   const { _id } = req.user;
-  User.findByIdAndUpdate({ _id }, { name, about }, { new: true, runValidators: true })
+  User.findByIdAndUpdate({ _id }, { name, email }, { new: true, runValidators: true })
     .orFail(new NotFoundError('Пользователь не найден'))
     .then((user) => {
       res.status(200).send(user);
     })
     .catch((error) => {
-      if (error instanceof ValidationError) {
+      if (error.name === 'ValidationError') {
         next(new BadRequestError('Некорректные данные - запрос не может быть обработан'));
       } else {
         next(new InternalServerError('На сервере произошла ошибка'));

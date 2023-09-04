@@ -38,12 +38,21 @@ app.get('/crash-test', () => {
 app.use('/', authRouter);
 app.use('/users', auth, usersRouter);
 app.use('/movies', auth, moviesRouter);
-app.use('*', () => {
+app.use('*', auth, () => {
   throw new NotFoundError('Страница не найдена');
 });
 
 app.use(errorLogger);
 app.use(errors());
+
+app.use((err, req, res, next) => {
+  const { statusCode = 500 } = err;
+  console.error(err);
+  res.status(statusCode).send({
+    message: statusCode === 500 ? 'На сервере произошла ошибка' : err.message,
+  });
+  next();
+});
 
 mongoose.connect(DB_URL, {
   useNewUrlParser: true,
