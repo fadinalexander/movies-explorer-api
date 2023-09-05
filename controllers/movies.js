@@ -1,10 +1,7 @@
-const { ValidationError } = require('mongoose');
-const { CastError } = require('mongoose');
-
 const Movie = require('../models/movie');
+
 const BadRequestError = require('../errors/BadRequestError');
 const NotFoundError = require('../errors/NotFoundError');
-const InternalServerError = require('../errors/InternalServerError');
 const ForbiddenError = require('../errors/ForbiddenError');
 
 const getMovies = (req, res, next) => {
@@ -13,7 +10,7 @@ const getMovies = (req, res, next) => {
       res.status(200).send(movies);
     })
     .catch(() => {
-      next(new InternalServerError('На сервере произошла ошибка'));
+      next();
     });
 };
 
@@ -24,11 +21,10 @@ const createMovie = (req, res, next) => {
       res.status(201).send(createdMovie);
     })
     .catch((error) => {
-      if (error instanceof ValidationError) {
-        next(new BadRequestError('Данные переданы не верно'));
-      } else {
-        next(new InternalServerError('На сервере произошла ошибка'));
+      if (error.name === 'ValidationError') {
+        return next(new BadRequestError('Данные переданы не верно'));
       }
+      return next(error);
     });
 };
 
@@ -49,12 +45,11 @@ const deleteMovie = (req, res, next) => {
     })
     .catch((error) => {
       if (error instanceof NotFoundError || error instanceof ForbiddenError) {
-        next(error);
-      } else if (error instanceof CastError) {
-        next(new BadRequestError('Данные переданы не верно'));
-      } else {
-        next(new InternalServerError('На сервере произошла ошибка'));
+        return next(error);
+      } if (error.name === 'CastError') {
+        return next(new BadRequestError('Данные переданы не верно'));
       }
+      return next(error);
     });
 };
 

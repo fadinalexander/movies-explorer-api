@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const cookies = require('cookie-parser');
 const helmet = require('helmet');
 const { errors } = require('celebrate');
+const limiter = require('./utils/limiter');
 
 const NotFoundError = require('./errors/NotFoundError');
 
@@ -21,6 +22,8 @@ const app = express();
 app.use(helmet());
 
 app.use(cors({ origin: ['http://localhost:3001', 'https://fadinhost.nomoredomainsicu.ru'], credentials: true }));
+
+app.use(limiter);
 
 app.use(requestLogger);
 
@@ -47,6 +50,7 @@ app.use(errors());
 
 app.use((err, req, res, next) => {
   const { statusCode = 500 } = err;
+  // eslint-disable-next-line no-console
   console.error(err);
   res.status(statusCode).send({
     message: statusCode === 500 ? 'На сервере произошла ошибка' : err.message,
@@ -60,5 +64,6 @@ mongoose.connect(DB_URL, {
 });
 
 app.listen(PORT, () => {
+  // eslint-disable-next-line no-console
   console.log(`Application is running on port ${PORT}`);
 });

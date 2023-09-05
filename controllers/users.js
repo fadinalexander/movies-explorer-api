@@ -2,11 +2,10 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const User = require('../models/user');
+
 const BadRequestError = require('../errors/BadRequestError');
 const NotFoundError = require('../errors/NotFoundError');
 const ConflictError = require('../errors/ConflictError');
-const InternalServerError = require('../errors/InternalServerError');
-// const UnauthorizedError = require('../errors/UnauthorizedError');
 
 const { NODE_ENV, JWT_SECRET } = process.env;
 
@@ -47,7 +46,9 @@ const login = (req, res, next) => {
         httpOnly: true,
         sameSite: true,
       });
-      res.send(user);
+      const userResponseData = user.toObject();
+      delete userResponseData.password;
+      res.send(userResponseData);
     })
     .catch((error) => {
       next(error);
@@ -77,10 +78,11 @@ const updateUserInfo = (req, res, next) => {
     })
     .catch((error) => {
       if (error.name === 'ValidationError') {
-        next(new BadRequestError('Некорректные данные - запрос не может быть обработан'));
-      } else {
-        next(new InternalServerError('На сервере произошла ошибка'));
+        return next(new BadRequestError('Некорректные данные - запрос не может быть обработан'));
+      } if (error.code === 11000) {
+        return next(new ConflictError('Пользователь с такими данными уже существует'));
       }
+      return next(error);
     });
 };
 
