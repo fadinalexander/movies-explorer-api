@@ -9,8 +9,8 @@ const getMovies = (req, res, next) => {
     .then((movies) => {
       res.status(200).send(movies);
     })
-    .catch(() => {
-      next();
+    .catch((error) => {
+      next(error);
     });
 };
 
@@ -44,9 +44,7 @@ const deleteMovie = (req, res, next) => {
       res.status(200).send(removedMovie);
     })
     .catch((error) => {
-      if (error instanceof NotFoundError || error instanceof ForbiddenError) {
-        return next(error);
-      } if (error.name === 'CastError') {
+      if (error.name === 'CastError') {
         return next(new BadRequestError('Данные переданы не верно'));
       }
       return next(error);
