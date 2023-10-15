@@ -36,7 +36,7 @@ router.post(
       thumbnail: Joi.string().required().regex(URLreg).messages({
         'any.required': 'Необходимо заполнить это поле',
       }),
-      movieId: Joi.string().required(),
+      movieId: Joi.number().required(),
       nameRU: Joi.string().required().messages({
         'any.required': 'Необходимо заполнить это поле',
       }),
