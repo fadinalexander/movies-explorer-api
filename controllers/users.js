@@ -44,7 +44,8 @@ const login = (req, res, next) => {
       res.cookie('userId', token, {
         maxAge: 604800000,
         httpOnly: true,
-        sameSite: true,
+        // secure: true,
+        SameSite: true,
       });
       const userResponseData = user.toObject();
       delete userResponseData.password;
